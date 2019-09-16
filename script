@@ -1,0 +1,150 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerAxeWooshSound : MonoBehaviour {
+
+    [SerializeField]
+    private AudioSource audioSource;
+
+    [SerializeField]
+    private AudioClip[] woosh_Sounds;
+
+    void PlayWooshSound() {
+        audioSource.clip = woosh_Sounds[Random.Range(0, woosh_Sounds.Length)];
+        audioSource.Play();
+    }
+
+	
+} // class
+
+////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerFootsteps : MonoBehaviour {
+
+    private AudioSource footstep_Sound;
+
+    [SerializeField]
+    private AudioClip[] footstep_Clip;
+
+    private CharacterController character_Controller;
+
+    [HideInInspector]
+    public float volume_Min, volume_Max;
+
+    private float accumulated_Distance;
+
+    [HideInInspector]
+    public float step_Distance;
+
+	void Awake () {
+        footstep_Sound = GetComponent<AudioSource>();
+
+        character_Controller = GetComponentInParent<CharacterController>();
+	}
+	
+	void Update () {
+        CheckToPlayFootstepSound();	
+	}
+
+    void CheckToPlayFootstepSound() {
+
+        // if we are NOT on the ground
+        if (!character_Controller.isGrounded) 
+            return;
+            
+
+        if(character_Controller.velocity.sqrMagnitude > 0) {
+
+            // accumulated distance is the value how far can we go 
+            // e.g. make a step or sprint, or move while crouching
+            // until we play the footstep sound
+            accumulated_Distance += Time.deltaTime;
+
+            if(accumulated_Distance > step_Distance) {
+
+                footstep_Sound.volume = Random.Range(volume_Min, volume_Max);
+                footstep_Sound.clip = footstep_Clip[Random.Range(0, footstep_Clip.Length)];
+                footstep_Sound.Play();
+
+                accumulated_Distance = 0f;
+
+            }
+
+        } else {
+            accumulated_Distance = 0f;
+        }
+
+
+    }
+
+
+
+} // class
+
+///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
+
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class PlayerMovement : MonoBehaviour {
+
+    private CharacterController character_Controller;
+
+    private Vector3 move_Direction;
+
+    public float speed = 5f;
+    private float gravity = 20f;
+
+    public float jump_Force = 10f;
+    private float vertical_Velocity;
+
+    void Awake() {
+        character_Controller = GetComponent<CharacterController>();
+    }
+	
+	void Update () {
+        MoveThePlayer();
+	}
+
+    void MoveThePlayer() {
+
+        move_Direction = new Vector3(Input.GetAxis(Axis.HORIZONTAL), 0f,
+                                     Input.GetAxis(Axis.VERTICAL));
+
+        move_Direction = transform.TransformDirection(move_Direction);
+        move_Direction *= speed * Time.deltaTime;
+
+        ApplyGravity();
+
+        character_Controller.Move(move_Direction);
+
+
+    } // move player
+
+    void ApplyGravity() {
+
+        vertical_Velocity -= gravity * Time.deltaTime;
+
+        // jump
+        PlayerJump();
+
+        move_Direction.y = vertical_Velocity * Time.deltaTime;
+
+    } // apply gravity
+
+    void PlayerJump() {
+
+        if(character_Controller.isGrounded && Input.GetKeyDown(KeyCode.Space)) {
+            vertical_Velocity = jump_Force;
+        }
+
+    }
+
+} // class
